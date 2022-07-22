@@ -1,0 +1,89 @@
+#!/usr/bin/env python3
+# update_youtubedown
+# This program looks if there is a new version of youtubedown.
+# The original lives at https://www.jwz.org/hacks/youtubedown
+
+import os.path
+import sys
+
+
+home_dir: str = os.path.expanduser("~") # /Users/username
+install_dir: str = home_dir + "/bin"
+old_file: str = home_dir + "/bin/youtubedown"
+new_file: str = home_dir + "/bin/tempfile"
+original_path: str = home_dir + "/bin/youtubedown"
+get_youtubedown: str = install_dir + "/get_youtubedown"
+url: str = "https://jwz.org/hacks/youtubedown"
+
+
+def make_executable(path_to_file: str) -> None:
+    """Make the file executable."""
+    os.chmod(path_to_file, 0o755)
+
+
+def rename_file(new_number: str) -> None:
+    """Renaming the tempfile to youtubedown."""
+    print(f".. Installing youtubedown version: {new_number}")
+    os.rename(new_file, original_path)
+
+
+def get_version_number(path_to_file: str) -> str:
+    """Returns the version number of the file as a string."""
+    try:
+        l = []
+        f = open(path_to_file, "rt")
+        for line in f:
+            if "$Revision" in line:
+                l = line.split(" ")
+        f.close()
+        return l[4]
+    except FileNotFoundError as e:
+        print(e)
+        sys.exit()
+
+
+def is_newer_version(old_number: str, new_number: str) -> bool:
+    """Checks if there is a more current version."""
+    if float(old_number) < float(new_number):
+        return True
+    else:
+        return False
+
+
+def backup_old_version(old_number: str) -> None:
+    """Backup the old file with its version number attached."""
+    new_path: str = old_file + "_" + old_number
+    print(".. Backing up old version to:")
+    print(".. " + new_path)
+    os.rename(old_file, new_path)
+
+
+def main() -> None:
+    """The main function."""
+    # get the latest version from the website by
+    # calling an external V program.
+    os.system(get_youtubedown)
+
+    # get the version number of the installed version
+    old: str = get_version_number(old_file)
+    # get the version number of the downloaded version
+    new: str = get_version_number(new_file)
+
+    if is_newer_version(old, new):
+        print("There is a newer version available.")
+        print(f"old version {old}; new version {new}")
+
+        answer = input("Do you want to install it? [y/n]\n")
+        if answer == "y" or answer == "yes":
+            backup_old_version(old)
+            rename_file(new)
+            make_executable(original_path)
+        else:
+            print("Exiting")
+            sys.exit()
+    else:
+        print(f"You have the latest version {old}.")
+
+
+if __name__ == "__main__":
+    main()
